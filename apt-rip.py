@@ -134,7 +134,7 @@ def read_config(path):
         'install_root': os.path.join(os.path.expanduser('~'), '.local')
     }
 
-    write_file(path, json.dumps(default_config, indent = 4))
+    write_file(path, json.dumps(default_config, indent = 4).encode())
 
     return default_config
 
@@ -198,7 +198,7 @@ def read_package_index(config, dist, repo):
             raise Exception('Error: Duplicate package "%s" in index' % name)
 
         packages[name] = package
-    write_file(path, json.dumps(packages, indent = 4))
+    write_file(path, json.dumps(packages, indent = 4).encode())
     return packages
 
 def find_packages(index, query):

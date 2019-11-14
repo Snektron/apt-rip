@@ -1,0 +1,4 @@
+{
+    "mirror": "https://mirrors.edge.kernel.org/ubuntu",
+    "install_root": "/home/robin/programming/projects/apt-rip/root"
+}
