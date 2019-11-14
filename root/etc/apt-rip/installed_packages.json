@@ -1,9 +1,0 @@
-{
-    "libc6": {
-        "dist": "special",
-        "repo": "system",
-        "explicit": "True",
-        "files": [],
-        "depends": []
-    }
-}
