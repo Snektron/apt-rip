@@ -260,7 +260,6 @@ def cmd_search(args):
 
 def cmd_install(args):
     config = read_config(args.config)
-    index = read_package_index(config, args.dist, args.repo)
     installed = read_installed(config)
 
     if args.system:
@@ -279,6 +278,7 @@ def cmd_install(args):
         write_installed(config, installed)
         return
 
+    index = read_package_index(config, args.dist, args.repo)
     packages = []
 
     for package in args.packages:
@@ -338,14 +338,14 @@ def cmd_list(args):
 parser = argparse.ArgumentParser(description = 'Rip packages from the ubuntu repos')
 parser.add_argument('--config', help = 'Specify apt-rip config', default = DEFAULT_CONFIG)
 parser.set_defaults(subcommand = lambda args: parser.error('missing subcommand'))
+parser.add_argument('--dist', help = 'Specify download distro', default = DEFAULT_DIST)
+parser.add_argument('--repo', help = 'Specify download repo', default = DEFAULT_REPO)
 
 subparsers = parser.add_subparsers(help = 'Specify action')
 
 install_parser = subparsers.add_parser('install', help = 'Install packages')
 install_parser.set_defaults(subcommand = cmd_install)
 install_parser.add_argument('packages', nargs = '+', help = 'Packages to install')
-install_parser.add_argument('--dist', help = 'Specify download distro', default = DEFAULT_DIST)
-install_parser.add_argument('--repo', help = 'Specify download repo', default = DEFAULT_REPO)
 install_parser.add_argument('--system', help = 'Mark packages as installed by the system', action = 'store_true')
 
 remove_parser = subparsers.add_parser('remove', help = 'Remove packages')
