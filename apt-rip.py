@@ -63,13 +63,13 @@ class Installer:
         deb = os.path.join(self.extract_dir, 'package.deb')
         write_file(deb, data)
 
-        result = subprocess.run(['ar', 'x', deb, 'data.tar.xz'], cwd = self.extract_dir, check = True, stderr = subprocess.PIPE)
+        result = subprocess.run(['ar', 'x', deb, 'data.tar.gz'], cwd = self.extract_dir, check = True, stderr = subprocess.PIPE)
         if result.stderr != b'':
-            raise Exception('Failed to extract deb')
+            raise Exception('Failed to extract deb: ' + result.stderr.decode().strip())
 
-        subprocess.run(['tar', 'xf', 'data.tar.xz'], cwd = self.extract_dir, check = True, stderr = subprocess.PIPE)
+        subprocess.run(['tar', 'xf', 'data.tar.gz'], cwd = self.extract_dir, check = True, stderr = subprocess.PIPE)
         os.remove(deb)
-        os.remove(os.path.join(self.extract_dir, 'data.tar.xz'))
+        os.remove(os.path.join(self.extract_dir, 'data.tar.gz'))
 
         package_files = []
         for root, dirs, files in os.walk(self.extract_dir):
@@ -186,6 +186,8 @@ def read_package_index(config, dist, repo):
             break
 
         for line in package_info.split('\n'):
+            if len(line) == 0 or line[0] == ' ':
+                continue
             field, value = line.split(': ', 1)
             if field in ['Version', 'Filename']:
                 package[field.lower()] = value
@@ -335,6 +337,29 @@ def cmd_list(args):
             ', explicit' if info['explicit'] else ''
         ))
 
+def print_deptree(package, index, installed, depth):
+    print('%s%s%s%s' % (
+        depth * '  ',
+        package,
+        ' [missing]' if package not in index else '',
+        ' [installed]' if package in installed else ''
+    ))
+
+    if package not in index:
+        return
+
+    dependencies = index[package]['depends'] if 'depends' in index[package] else []
+    for dep in dependencies:
+        dep_pkg = dep.split(' ')[0] # Ignore version
+        print_deptree(dep_pkg, index, installed, depth + 1)
+
+def cmd_deptree(args):
+    config = read_config(args.config)
+    index = read_package_index(config, args.dist, args.repo)
+    installed = read_installed(config)
+
+    print_deptree(args.package, index, installed, 0)
+
 parser = argparse.ArgumentParser(description = 'Rip packages from the ubuntu repos')
 parser.add_argument('--config', help = 'Specify apt-rip config', default = DEFAULT_CONFIG)
 parser.set_defaults(subcommand = lambda args: parser.error('missing subcommand'))
@@ -356,8 +381,12 @@ search_parser = subparsers.add_parser('search', help = 'Search for a package')
 search_parser.set_defaults(subcommand = cmd_search)
 search_parser.add_argument('query', help = 'Package query to search for')
 
-search_parser = subparsers.add_parser('list', help = 'Installed packages')
-search_parser.set_defaults(subcommand = cmd_list)
+list_parser = subparsers.add_parser('list', help = 'Installed packages')
+list_parser.set_defaults(subcommand = cmd_list)
+
+deptree_parser = subparsers.add_parser('deptree', help = 'Show dependency tree')
+deptree_parser.set_defaults(subcommand = cmd_deptree)
+deptree_parser.add_argument('package', help = 'Package to print tree for')
 
 args = parser.parse_args()
 
